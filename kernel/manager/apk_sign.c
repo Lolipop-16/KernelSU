@@ -337,6 +337,10 @@ enum ksu_manager_type ksu_detect_manager_apk(char *path)
 	if (check_v2_signature(path, 0x3e6, "79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7"))
 		return KSU_MANAGER_KSUN;
 
+	// ThRE-Team/KernelSU-Next
+	if (check_v2_signature(path, 0x31c, "1ab6077099505a4f5ff851732d5d965a4908af7f60c871f23b4b3a58e80e6cd3"))
+		return KSU_MANAGER_KSUN;
+
 	// RapliVx/KernelSU
 	if (check_v2_signature(path, 0x384, "a9462b8b98ea1ca7901b0cbdcebfaa35f0aa95e51b01d66e6b6d2c81b97746d8"))
 		return KSU_MANAGER_XXSU;
