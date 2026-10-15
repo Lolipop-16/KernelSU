@@ -23,7 +23,7 @@ This project uses an enhanced integration method based on
 Run this inside your kernel source:
 
 ```sh
-curl -LSs "https://raw.githubusercontent.com/manipvlator/KernelSU/refs/heads/main/kernel/setup.sh" | bash -s main
+curl -LSs "https://raw.githubusercontent.com/Lolipop-16/KernelSU/refs/heads/main-susfs/kernel/setup.sh" | bash -s main-susfs
 ```
 
 This will automatically integrate KernelSU using the syscall method.
