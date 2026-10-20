@@ -1,3 +1,5 @@
+#include "../manager/apk_sign.h"
+
 static int do_grant_root(void __user *arg)
 {
 	int ret;
@@ -19,7 +21,7 @@ static int do_grant_root(void __user *arg)
 
 static int do_get_info(void __user *arg)
 {
-	struct ksu_get_info_cmd cmd = { .version = KERNEL_SU_VERSION, .flags = 0 };
+	struct ksu_get_info_cmd cmd = { .version = ksu_get_manager_version(), .flags = 0 };
 
 #ifdef MODULE
 	cmd.flags |= KSU_GET_INFO_FLAG_LKM;
@@ -50,7 +52,7 @@ static int do_get_info(void __user *arg)
 
 static int do_get_info_legacy(void __user *arg)
 {
-	struct ksu_get_info_legacy_cmd cmd = { .version = KERNEL_SU_VERSION, .flags = 0 };
+	struct ksu_get_info_legacy_cmd cmd = { .version = ksu_get_manager_version(), .flags = 0 };
 
 	if (is_manager()) {
 		cmd.flags |= KSU_GET_INFO_FLAG_MANAGER;
@@ -473,6 +475,56 @@ static int do_manage_mark(void __user *arg)
 	return 0;
 }
 
+static int ksu_copy_to_user(void __user *arg, const void *cmd,
+			    size_t size, const char *name)
+{
+	if (copy_to_user(arg, cmd, size)) {
+		pr_err("%s: copy_to_user failed\n", name);
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
+static const char *ksu_hook_type(void)
+{
+#ifdef CONFIG_KSU_KPROBES_KSUD
+	return "Kprobes";
+#elif defined(CONFIG_KSU_TAMPER_SYSCALL_TABLE) || \
+      defined(CONFIG_KSU_HACK_ARM64_BRANCH_LINK)
+	return "Hookless";
+#else
+	return "Manual";
+#endif
+}
+
+static int do_get_hook_mode(void __user *arg)
+{
+	struct ksu_get_hook_mode_cmd cmd = { 0 };
+
+	strscpy(cmd.mode, ksu_hook_type(), sizeof(cmd.mode));
+
+	return ksu_copy_to_user(arg, &cmd, sizeof(cmd), "get_hook_mode");
+}
+
+static int do_get_hook_type(void __user *arg)
+{
+	struct ksu_hook_type_cmd cmd = { 0 };
+
+	strscpy(cmd.hook_type, ksu_hook_type(), sizeof(cmd.hook_type));
+
+	return ksu_copy_to_user(arg, &cmd, sizeof(cmd), "get_hook_type");
+}
+
+static int do_get_version_tag(void __user *arg)
+{
+	struct ksu_get_version_tag_cmd cmd = { 0 };
+
+	strscpy(cmd.tag, ksu_get_manager_version_tag(), sizeof(cmd.tag));
+
+	return ksu_copy_to_user(arg, &cmd, sizeof(cmd), "get_version_tag");
+}
+
 static int do_nuke_ext4_sysfs(void __user *arg)
 {
 	struct ksu_nuke_ext4_sysfs_cmd cmd;
@@ -816,6 +868,9 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
 	{ .cmd = KSU_IOCTL_GET_SULOG_FD, .name = "GET_SULOG_FD", .handler = do_get_sulog_fd, .perm_check = only_root },
 	{ .cmd = KSU_IOCTL_DISABLE_ESCAPE_TO_ROOT, .name = "DISABLE_ESCAPE_TO_ROOT", .handler = do_disable_escape_to_root, .perm_check = only_root, .allow_su_session = true },
 	{ .cmd = KSU_IOCTL_LOOKUP_SYMBOLS, .name = "LOOKUP_SYMBOLS", .handler = do_lookup_symbols, .perm_check = only_root },
+	{ .cmd = KSU_IOCTL_GET_HOOK_MODE, .name = "GET_HOOK_MODE", .handler = do_get_hook_mode, .perm_check = manager_or_root },
+	{ .cmd = KSU_IOCTL_GET_VERSION_TAG, .name = "GET_VERSION_TAG", .handler = do_get_version_tag, .perm_check = manager_or_root },
+	{ .cmd = KSU_IOCTL_HOOK_TYPE, .name = "HOOK_TYPE", .handler = do_get_hook_type, .perm_check = manager_or_root },
 	{ .cmd = 0, .name = NULL, .handler = NULL, .perm_check = NULL } // Sentinel
 };
 
